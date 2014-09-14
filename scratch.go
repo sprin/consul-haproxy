@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
+	"regexp"
 	"sort"
 )
 
@@ -51,6 +52,14 @@ func stringInSlice(a string, list []string) bool {
 	return false
 }
 
+func kvFromString(a string) (string, string) {
+	re := regexp.MustCompile(`^(\w+)=(\w+)$`)
+	if m := re.FindAllStringSubmatch(a, -1); len(m) != 0 {
+		return m[0][1], m[0][2]
+	}
+	return "", ""
+}
+
 func main() {
 	servers := []ServerEntry{
 		{"0", "app", []string{"backup"}, 8000, net.IP{192, 168, 0, 2}, "node0"},
@@ -63,4 +72,11 @@ func main() {
 	fmt.Println("Unsorted:", servers)
 	By(backups_last).Sort(servers)
 	fmt.Println("Sorted, backups last:", servers)
+
+	for _, tag := range []string{"FOO=BAR", "FOO", "FOO=", "=BAZ", "123=456"} {
+		k, v := kvFromString(tag)
+		if k != "" {
+			fmt.Println(k, v)
+		}
+	}
 }
