@@ -14,6 +14,7 @@ type ServerEntry struct {
 	Port    int
 	IP      []byte
 	Node    string
+  Attrs   map[string]string
 }
 
 type By func(p1, p2 *ServerEntry) bool
@@ -62,21 +63,26 @@ func kvFromString(a string) (string, string) {
 
 func main() {
 	servers := []ServerEntry{
-		{"0", "app", []string{"backup"}, 8000, net.IP{192, 168, 0, 2}, "node0"},
-		{"1", "app", []string{}, 8000, net.IP{192, 168, 0, 3}, "node1"},
-		{"2", "app", []string{"backup"}, 8000, net.IP{192, 168, 0, 4}, "node3"},
+		{"0", "app", []string{"HOST=app", "ORDER=1"}, 8000, net.IP{192, 168, 0, 2}, "node0", map[string]string{},},
+		{"1", "app", []string{"HOST=app", "ORDER=0"}, 8000, net.IP{192, 168, 0, 3}, "node1", map[string]string{},},
+		{"2", "db", []string{"HOST=db", "ORDER=0"}, 8000, net.IP{192, 168, 0, 4}, "node3", map[string]string{},},
+		{"3", "app", []string{"HOST=app", "ORDER=2"}, 8000, net.IP{192, 168, 0, 5}, "node4", map[string]string{},},
 	}
-	backups_last := func(s1, s2 *ServerEntry) bool {
-		return !stringInSlice("backup", s1.Tags)
-	}
-	fmt.Println("Unsorted:", servers)
-	By(backups_last).Sort(servers)
-	fmt.Println("Sorted, backups last:", servers)
 
-	for _, tag := range []string{"FOO=BAR", "FOO", "FOO=", "=BAZ", "123=456"} {
-		k, v := kvFromString(tag)
-		if k != "" {
-			fmt.Println(k, v)
-		}
+  for _, server := range servers {
+    for _, tag := range server.Tags {
+      k, v := kvFromString(tag)
+      if k != "" {
+        server.Attrs[k] = v;
+      }
+    }
+  }
+
+	failover_order := func(s1, s2 *ServerEntry) bool {
+		return s1.Attrs["ORDER"] < s2.Attrs["ORDER"]
 	}
+
+	fmt.Println("Unsorted:", servers)
+	By(failover_order).Sort(servers)
+	fmt.Println("Sorted:", servers)
 }
