@@ -324,6 +324,7 @@ type ServerEntry struct {
 	Port    int
 	IP      net.IP
 	Node    string
+	Attrs   map[string]string
 }
 
 // String is the default text representation of a server
@@ -338,8 +339,18 @@ func (se *ServerEntry) String() string {
 func formatOutput(inp map[string][]*consulapi.ServiceEntry) map[string][]*ServerEntry {
 	out := make(map[string][]*ServerEntry)
 	for backend, entries := range inp {
+
 		servers := make([]*ServerEntry, len(entries))
 		for idx, entry := range entries {
+
+			var attrs = map[string]string{}
+			for _, tag := range entry.Service.Tags {
+				k, v := kvFromString(tag)
+				if k != "" {
+					attrs[k] = v
+				}
+			}
+
 			servers[idx] = &ServerEntry{
 				ID:      entry.Service.ID,
 				Service: entry.Service.Service,
@@ -347,8 +358,12 @@ func formatOutput(inp map[string][]*consulapi.ServiceEntry) map[string][]*Server
 				Port:    entry.Service.Port,
 				IP:      net.ParseIP(entry.Node.Address),
 				Node:    entry.Node.Node,
+				Attrs:   attrs,
 			}
 		}
+
+		By(failoverOrder).Sort(servers)
+
 		out[backend] = servers
 	}
 	return out

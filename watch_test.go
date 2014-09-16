@@ -250,11 +250,11 @@ func TestFormatOutput(t *testing.T) {
 		"foo": []*consulapi.ServiceEntry{
 			&consulapi.ServiceEntry{
 				Node:    &consulapi.Node{Node: "node1", Address: "127.0.0.1"},
-				Service: &consulapi.AgentService{ID: "redis", Port: 8000},
+				Service: &consulapi.AgentService{ID: "redis", Port: 8000, Tags: []string{"HOST=app.test", "ORDER=1"}},
 			},
 			&consulapi.ServiceEntry{
 				Node:    &consulapi.Node{Node: "node3", Address: "127.0.0.3"},
-				Service: &consulapi.AgentService{ID: "redis", Port: 1234},
+				Service: &consulapi.AgentService{ID: "redis", Port: 1234, Tags: []string{"HOST=app.test", "ORDER=0"}},
 			},
 		},
 		"bar": []*consulapi.ServiceEntry{
@@ -277,10 +277,10 @@ func TestFormatOutput(t *testing.T) {
 	if len(foo) != 2 {
 		t.Fatalf("bad: %v", foo)
 	}
-	if foo[0].String() != "server node1_redis 127.0.0.1:8000" {
+	if foo[0].String() != "server node3_redis 127.0.0.3:1234" {
 		t.Fatalf("Bad: %v", foo)
 	}
-	if foo[1].String() != "server node3_redis 127.0.0.3:1234" {
+	if foo[1].String() != "server node1_redis 127.0.0.1:8000" {
 		t.Fatalf("Bad: %v", foo)
 	}
 
